@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Разметка одного элемента списка аудиофайлов в библиотеке.
+    Отдельный layout нужен, чтобы задать белый цвет текста и отступы
+    на тёмном фоне.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/audio_item_text"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="12dp"
+    android:textColor="@color/dark_text_primary"
+    android:textSize="16sp" />
+
+

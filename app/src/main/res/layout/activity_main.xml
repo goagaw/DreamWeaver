@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Главный экран приложения с сеткой из 10 кнопок (0–9) и нижней панелью с логотипом.
+    Здесь пользователь выбирает кнопку, к которой будет привязан аудиофайл.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_background"
+    tools:context=".MainActivity">
+
+    <!--
+        ScrollView с вертикальным содержимым.
+        Нужен на случай, если высоты экрана не хватает для всех кнопок и кнопки
+        должны прокручиваться.
+    -->
+    <ScrollView
+        android:id="@+id/scroll_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_panel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!--
+            Внутренний вертикальный контейнер, центрирует содержимое
+            и задаёт отступы от краёв.
+        -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:gravity="center">
+
+            <!-- Заголовок над сеткой кнопок -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Выберите кнопку"
+                android:textColor="@color/dark_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="24dp" />
+
+            <!--
+                Сетка из 10 кнопок (0–9).
+                columnCount="3" и rowCount="4" задают сетку 3x4.
+                Каждая кнопка получает одинаковую ширину за счёт layout_columnWeight="1".
+            -->
+            <GridLayout
+                android:id="@+id/buttons_grid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3"
+                android:rowCount="4"
+                android:alignmentMode="alignMargins"
+                android:useDefaultMargins="false"
+                android:padding="8dp">
+
+                <!-- Кнопка 0. По разметке только базовый вид (цвет, размер).
+                     Логика привязки и текста (имя файла) задаётся в MainActivity. -->
+                <Button
+                    android:id="@+id/button_0"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="0"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 1 -->
+                <Button
+                    android:id="@+id/button_1"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="1"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 2 -->
+                <Button
+                    android:id="@+id/button_2"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="2"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 3 -->
+                <Button
+                    android:id="@+id/button_3"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="3"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 4 -->
+                <Button
+                    android:id="@+id/button_4"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="4"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 5 -->
+                <Button
+                    android:id="@+id/button_5"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="5"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 6 -->
+                <Button
+                    android:id="@+id/button_6"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="6"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 7 -->
+                <Button
+                    android:id="@+id/button_7"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="7"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 8 -->
+                <Button
+                    android:id="@+id/button_8"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="8"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+                <!-- Кнопка 9 -->
+                <Button
+                    android:id="@+id/button_9"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    android:text="9"
+                    android:textSize="24sp"
+                    android:textColor="@color/dark_text_primary"
+                    android:backgroundTint="@color/dark_accent" />
+
+            </GridLayout>
+
+            <!-- Кнопка, открывающая экран библиотеки аудиофайлов -->
+            <Button
+                android:id="@+id/audio_library_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Загрузить аудио"
+                android:textColor="@color/dark_text_primary"
+                android:backgroundTint="@color/dark_accent"
+                android:paddingStart="32dp"
+                android:paddingEnd="32dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:textSize="18sp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!--
+        Нижняя фиксированная панель с логотипом приложения.
+        Прикреплена к нижнему краю экрана и не прокручивается.
+    -->
+    <LinearLayout
+        android:id="@+id/bottom_panel"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@color/dark_panel"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:id="@+id/bottom_logo"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="@string/logo_description"
+            android:src="@drawable/logom"
+            android:scaleType="fitCenter" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

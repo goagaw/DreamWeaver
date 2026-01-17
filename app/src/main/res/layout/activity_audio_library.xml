@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Экран библиотеки аудиофайлов.
+    Показывает заголовок, кнопку "Загрузить аудиофайл" и список уже загруженных файлов.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/audio_library_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_background"
+    tools:context=".AudioLibraryActivity">
+
+    <!--
+        Вертикальный контейнер, занимающий всё пространство.
+        Внутри него: заголовок, кнопка загрузки и ListView со списком аудиофайлов.
+    -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Заголовок экрана "Библиотека аудиофайлов" -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Библиотека аудиофайлов"
+            android:textColor="@color/dark_text_primary"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Кнопка для выбора и загрузки нового аудиофайла через системный диалог -->
+        <Button
+            android:id="@+id/load_audio_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Загрузить аудиофайл"
+            android:textColor="@color/dark_text_primary"
+            android:backgroundTint="@color/dark_accent"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:textSize="18sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Подзаголовок перед списком файлов -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Загруженные файлы:"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <!--
+            Список всех аудиофайлов, сохранённых во внутренней папке приложения.
+            Элементы списка отрисовываются с помощью layout item_audio_list.xml.
+        -->
+        <ListView
+            android:id="@+id/audio_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/dark_surface"
+            android:divider="@color/dark_panel"
+            android:dividerHeight="1dp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
