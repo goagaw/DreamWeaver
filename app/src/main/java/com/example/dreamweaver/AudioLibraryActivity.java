@@ -194,7 +194,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
 
     /**
      * вопрос удалить ли оригинальный файл после импорта
-     * если согласиться — будет предпринята попытка удаления через DocumentsContract
+     * если согласиться будет предпринята попытка удаления через DocumentsContract
      */
     private void askToDeleteOriginal(Uri originalUri) {
         new androidx.appcompat.app.AlertDialog.Builder(this)
@@ -206,9 +206,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Пытается удалить оригинальный файл по Uri, используя DocumentsContract.
-     * Успех зависит от того, разрешает ли провайдер документов удаление
-     * и были ли выданы нужные права.
+     * пытается удалить оригинальный файл по Uri, используя DocumentsContract
      */
     private void deleteOriginalIfPossible(Uri originalUri) {
         try {
@@ -230,7 +228,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Извлекает читабильное имя файла по Uri:
+     * извлекает читабильное имя файла по Uri:
      */
     private String getFileName(Uri uri) {
         String fileName = null;
@@ -279,7 +277,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * проверяет является ли имя файла аудиофайлом по его расширению.
+     * проверяет является ли имя файла аудиофайлом по его расширению
      */
     private boolean isAudioFile(String fileName) {
         String lower = fileName.toLowerCase();
@@ -289,7 +287,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Возвращает File для аудиофайла внутри внутренней папки приложения
+     * возвращает File для аудиофайла внутри внутренней папки приложения
      */
     public static File getAudioFile(android.content.Context context, String fileName) {
         File audioDir = new File(context.getFilesDir(), "audio_files");
@@ -352,7 +350,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Диалог удаления файла, вызываемый из окна переименования
+     * диалог удаления файла из окна переименования
      */
     private void showDeleteDialogFromRename(String fileName) {
         new androidx.appcompat.app.AlertDialog.Builder(this)

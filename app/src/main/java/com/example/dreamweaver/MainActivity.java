@@ -24,7 +24,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     /**
-     * привязки аудиофайлов к кнопкам и управление MediaPlayer.
+     * привязки аудиофайлов к кнопкам и управление MediaPlayer
      */
     private AudioButtonManager audioManager;
 
@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Укоротить имя файла чтобы оно влезало на кнопку
+     * укорачивает имя файла чтобы оно влезало на кнопку
      */
     private String getShortFileName(String fileName) {
         if (fileName.length() > 15) {
