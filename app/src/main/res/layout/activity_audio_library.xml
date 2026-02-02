@@ -37,7 +37,7 @@
             android:gravity="center"
             android:layout_marginBottom="16dp" />
 
-        <!-- Кнопка для выбора и загрузки нового аудиофайла через системный диалог -->
+        <!-- Кнопка для выбора и загрузки нового аудиофайла -->
         <Button
             android:id="@+id/load_audio_button"
             android:layout_width="match_parent"

@@ -25,39 +25,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Экран "Библиотека аудиофайлов".
- *
- * Здесь пользователь:
- * - видит список всех аудиофайлов, сохранённых во внутренней папке приложения;
- * - может загрузить новые файлы из любой доступной памяти/облака;
- * - может переименовывать и удалять файлы;
- * - при загрузке может согласиться удалить оригинал, чтобы не занимать лишнее место.
+ * список всех аудиофайлов, сохранённых во внутренней папке приложения
+ * загрузка аудиофайлов из памяти, переиминовывание, удаление
+ * при загрузке предлагает удалить оригинал, чтобы не занимать лишнее место
  */
 public class AudioLibraryActivity extends AppCompatActivity {
 
     /**
-     * Имена аудиофайлов, которые мы заранее кладём из assets во внутреннюю папку приложения
-     * при первом открытии библиотеки (предзагруженные звуки).
+     * имена аудиофайлов, которые мы заранее кладём из assets во внутреннюю папку приложения (предзагруженные звуки)
      */
     private static final String[] PRELOADED_ASSET_FILES = new String[] {"rain.mp3", "tavern_music.mp3"};
 
     /**
-     * Список на экране, в котором отображаются имена аудиофайлов.
+     * список на экране в котором отображаются имена аудиофайлов.
      */
     private ListView audioList;
 
     /**
-     * Адаптер, который управляет отображением строк в ListView.
+     * управляет отображением строк в ListView.
      */
     private ArrayAdapter<String> adapter;
 
     /**
-     * Список имён файлов, которые лежат во внутренней папке приложения.
+     * список имён файлов, во внутренней папке приложения.
      */
     private List<String> audioFileNames;
 
     /**
-     * Лаунчер, который открывает системный диалог выбора документа
+     * открывает системный диалог выбора документа
      * и возвращает Uri выбранного аудифайла.
      */
     private ActivityResultLauncher<String[]> audioPickerLauncher;
@@ -65,7 +60,6 @@ public class AudioLibraryActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Включаем отрисовку "от края до края" с учётом системных панелей
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_audio_library);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.audio_library_root), (v, insets) -> {
@@ -82,17 +76,16 @@ public class AudioLibraryActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, R.layout.item_audio_list, R.id.audio_item_text, audioFileNames);
         audioList.setAdapter(adapter);
 
-        // Готовим лаунчер для выбора аудиофайла
         setupAudioPicker();
-        // Копируем предзагруженные файлы из assets во внутреннюю папку
+
         ensurePreloadedAudio();
-        // Считываем список файлов, чтобы отобразить их на экране
+
         loadAudioFileNames();
 
-        // Кнопка "Загрузить аудиофайл" — открывает системный диалог выбора файла
+        // кнопка Загрузить аудиофайл  открывает диалог выбора файла
         loadAudioButton.setOnClickListener(v -> audioPickerLauncher.launch(new String[]{"audio/*"}));
 
-        // Обычный тап по элементу списка — открывает диалог переименования/удаления файла
+        // нажатие по элементу списка — открывает диалог
         audioList.setOnItemClickListener((parent, view, position, id) -> {
             String fileName = audioFileNames.get(position);
             showRenameDialog(fileName);
@@ -100,9 +93,8 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Гарантирует, что предзагруженные файлы из assets скопированы
-     * во внутреннюю папку приложения. Если файл уже был скопирован ранее —
-     * повторно не копируем.
+     * что предзагруженные файлы из assets скопированы
+     * во внутреннюю папку приложения. Если файл уже был скопирован ранее, повторно не копируем
      */
     private void ensurePreloadedAudio() {
         try {
@@ -126,14 +118,12 @@ public class AudioLibraryActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e) {
-            // Если по какой-то причине assets нет или при копировании произошла ошибка —
-            // приложение не должно падать: пользователь всё равно может загрузить свои файлы.
             e.printStackTrace();
         }
     }
 
     /**
-     * Настраиваем лаунчер, который открывает системный диалог выбора документа (OpenDocument).
+     * лаунчер, который открывает системный диалог выбора документа.
      */
     private void setupAudioPicker() {
         audioPickerLauncher = registerForActivityResult(
@@ -141,15 +131,12 @@ public class AudioLibraryActivity extends AppCompatActivity {
                 uri -> {
                     if (uri != null) {
                         try {
-                            // Просим у системы долгосрочные права на чтение/запись к этому Uri.
-                            // Это может понадобиться для удаления оригинала через DocumentsContract.
+                            // Просим у системы долгосрочные права на чтение запись к этому Uri
                             final int flags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
                             getContentResolver().takePersistableUriPermission(uri, flags);
                         } catch (SecurityException ignored) {
-                            // Некоторые провайдеры могут не дать такие права — это не критично:
-                            // мы всё равно сможем прочитать и скопировать файл, раз пользователь его выбрал.
                         }
-                        // После выбора файла копируем его во внутреннюю папку приложения
+                        // после выбора файла копируем его во внутреннюю папку приложения
                         saveAudioFile(uri);
                     }
                 }
@@ -157,10 +144,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Копирует выбранный пользователем файл (по Uri) во внутреннюю папку приложения.
-     * По сути — "импорт" файла в приложение.
-     *
-     * @param uri Uri выбранного пользователем файла
+     * копирует выбранный пользователем файл по Uri во внутреннюю папку приложения
      */
     private void saveAudioFile(Uri uri) {
         try {
@@ -170,20 +154,20 @@ public class AudioLibraryActivity extends AppCompatActivity {
                 return;
             }
 
-            // Получаем имя файла, которым он будет сохранён внутри приложения
+            // получаем имя файла, которым он будет сохранён внутри приложения
             String fileName = getFileName(uri);
             if (fileName == null || fileName.isEmpty()) {
-                // На случай, если имя не удалось получить — генерируем своё
+                // если имя не удалось получить — генерируем своё
                 fileName = "audio_" + System.currentTimeMillis() + ".mp3";
             }
 
-            // Создаём (если ещё не создана) внутреннюю директорию приложения для аудиофайлов
+            // создаём если ещё не создана внутреннюю директорию для аудиофайлов
             File audioDir = new File(getFilesDir(), "audio_files");
             if (!audioDir.exists()) {
                 audioDir.mkdirs();
             }
 
-            // Готовим файл-назначение внутри приложения
+            // готовим файл-назначение внутри приложения
             File outputFile = new File(audioDir, fileName);
             FileOutputStream outputStream = new FileOutputStream(outputFile);
 
@@ -200,8 +184,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
             Toast.makeText(this, "Аудиофайл загружен: " + fileName, Toast.LENGTH_SHORT).show();
             // Обновляем список файлов в ListView
             loadAudioFileNames();
-            // После успешного копирования предлагаем удалить оригинал,
-            // чтобы не занимать лишнее место.
+            // После успешного копирования предлагаем удалить оригинал
             askToDeleteOriginal(uri);
         } catch (Exception e) {
             Toast.makeText(this, "Ошибка загрузки: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -210,8 +193,8 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Показывает диалог с вопросом: удалить ли оригинальный файл после импорта.
-     * Если пользователь согласится — будет предпринята попытка удаления через DocumentsContract.
+     * вопрос удалить ли оригинальный файл после импорта
+     * если согласиться — будет предпринята попытка удаления через DocumentsContract
      */
     private void askToDeleteOriginal(Uri originalUri) {
         new androidx.appcompat.app.AlertDialog.Builder(this)
@@ -247,9 +230,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Извлекает человекочитаемое имя файла по Uri:
-     * - для content:// через OpenableColumns.DISPLAY_NAME
-     * - для file:// или других схем — по последнему сегменту пути.
+     * Извлекает читабильное имя файла по Uri:
      */
     private String getFileName(Uri uri) {
         String fileName = null;
@@ -277,9 +258,9 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Сканирует внутреннюю папку приложения и заполняет список audioFileNames
-     * только теми файлами, которые распознаны как аудио.
-     * Затем уведомляет адаптер, чтобы обновить ListView.
+     * сканирует внутреннюю папку приложения и заполняет список audioFileNames
+     * только теми файлами, которые распознаны как аудио
+     * уведомляет адаптер, чтобы обновить ListView
      */
     private void loadAudioFileNames() {
         audioFileNames.clear();
@@ -298,7 +279,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Проверяет, является ли имя файла аудиофайлом по его расширению.
+     * проверяет является ли имя файла аудиофайлом по его расширению.
      */
     private boolean isAudioFile(String fileName) {
         String lower = fileName.toLowerCase();
@@ -308,8 +289,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Возвращает File-объект для аудиофайла внутри внутренней папки приложения.
-     * Используется и из этой активности, и из MainActivity/AudioButtonManager.
+     * Возвращает File для аудиофайла внутри внутренней папки приложения
      */
     public static File getAudioFile(android.content.Context context, String fileName) {
         File audioDir = new File(context.getFilesDir(), "audio_files");
@@ -317,12 +297,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Диалог переименования файла.
-     * Позволяет:
-     * - изменить имя файла во внутренней папке приложения;
-     * - удалить файл (отдельная кнопка "Удалить");
-     * При успешном переименовании обновляем и привязки в AudioButtonManager,
-     * чтобы кнопки начинали ссылаться на новое имя файла.
+     * диалог переименования
      */
     private void showRenameDialog(String oldFileName) {
         final android.widget.EditText input = new android.widget.EditText(this);
@@ -377,10 +352,7 @@ public class AudioLibraryActivity extends AppCompatActivity {
     }
 
     /**
-     * Диалог удаления файла, вызываемый из окна переименования.
-     * В отличие от обычного удаления по долгому нажатию:
-     * - здесь после удаления мы дополнительно отвязываем файл от всех кнопок,
-     *   чтобы не осталось битых ссылок.
+     * Диалог удаления файла, вызываемый из окна переименования
      */
     private void showDeleteDialogFromRename(String fileName) {
         new androidx.appcompat.app.AlertDialog.Builder(this)

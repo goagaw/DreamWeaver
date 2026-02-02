@@ -20,19 +20,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * сетка из 10 кнопок
- * привязка аудиофайлов, их громкость и воспроизведение
- * открывается экран библиотеки аудио
+ * сетка из 10 кнопок привязка аудиофайлов, их громкость и воспроизведение
  */
 public class MainActivity extends AppCompatActivity {
 
     /**
-     *привязки аудиофайлов к кнопкам и управление MediaPlayer.
+     * привязки аудиофайлов к кнопкам и управление MediaPlayer.
      */
     private AudioButtonManager audioManager;
 
     /**
-     * Лаунчер для запуска активности библиотеки аудио и получения результата
+     * лаунчер для запуска активности библиотеки аудио и получения результата
      */
     private ActivityResultLauncher<Intent> audioLibraryLauncher;
 
@@ -42,22 +40,19 @@ public class MainActivity extends AppCompatActivity {
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        // Обработчик системных отступов
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        // Инициализируем менеджер аудио-кнопок
         audioManager = new AudioButtonManager(this);
 
-        // Настраиваем сами числовые кнопки
         setupButtons();
-        // Готовим лаунчер для открытия библиотеки аудио
+
         setupAudioLibraryLauncher();
 
-        // Кнопка "Загрузить аудио" внизу экрана — открывает библиотеку файлов
+        // Кнопка Загрузить аудио открывает библиотеку файлов
         Button audioLibraryButton = findViewById(R.id.audio_library_button);
         audioLibraryButton.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, AudioLibraryActivity.class);
@@ -66,8 +61,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Находит все кнопки 0–9 в разметке и навешивает на них обработчики.
-     * При нажатии на кнопку открывается меню с настройками этой кнопки.
+     * находит все кнопки 0–9 в разметке и навешивает на них обработчики.
+     * при нажатии на кнопку открывается меню с настройками этой кнопки.
      */
     private void setupButtons() {
         for (int i = 0; i <= 9; i++) {
@@ -89,24 +84,28 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Обновить текст на конкретной кнопке:
-     * - первая строка: номер кнопки
-     * - вторая строка: (сокращённое) имя файла, если привязан
-     * - индикатор воспроизведения (▶) обновляется через AudioButtonManager
+     * первая строка номер кнопки
+     * вторая строка имя файла, если привязан
+     * индикатор воспроизведения (▶) обновляется через AudioButtonManager
      */
     private void updateButtonText(Button button, int buttonNumber) {
         String audioFileName = audioManager.getAudioForButton(buttonNumber);
-        
-        String text = String.valueOf(buttonNumber);
-        if (audioFileName != null) {
-            text += "\n" + getShortFileName(audioFileName);
+
+        if (audioFileName == null) {
+            button.setText(String.valueOf(buttonNumber));
+        } else {
+            button.setText(getShortFileName(removeExtension(audioFileName)));
+            button.setTextSize(16);
         }
-        // Note: playing state indicator (▶) is managed by AudioButtonManager and will be updated via updateButtonAppearance
-        button.setText(text);
+    }
+
+    private String removeExtension(String fileName) {
+        int dot = fileName.lastIndexOf('.');
+        return dot > 0 ? fileName.substring(0, dot) : fileName;
     }
 
     /**
-     * Укоротить имя файла, если оно слишком длинное,
-     * чтобы оно нормально влезало на кнопку.
+     * Укоротить имя файла чтобы оно влезало на кнопку
      */
     private String getShortFileName(String fileName) {
         if (fileName.length() > 15) {
@@ -116,13 +115,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Диалог выбора аудиофайла из уже загруженных в папку приложения.
-     * Показывается, когда пользователь хочет привязать/поменять файл для кнопки.
+     * диалог выбора аудиофайла из уже загруженных в папку приложения
      */
     private void showBindAudioDialog(int buttonNumber, Button buttonView) {
         List<String> audioFiles = getAvailableAudioFiles();
         if (audioFiles.isEmpty()) {
-            // Если в библиотеке ещё нет файлов — перенаправляем пользователя на экран библиотеки
+            // если в библиотеке ещё нет файлов перенаправляет пользователя на экран библиотеки
             Toast.makeText(this, "Нет загруженных аудиофайлов. Загрузите файлы в библиотеке.", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(this, AudioLibraryActivity.class);
             startActivity(intent);
@@ -143,35 +141,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Диалог настроек конкретной кнопки.
-     * Включает:
-     * - информацию о привязанном файле
-     * - ползунок громкости для этой кнопки
-     * - действия: Привязать/Изменить аудио, Плей/Стоп, Отвязать аудио.
+     * Диалог настроек кнопки
      */
     private void showButtonMenuDialog(int buttonNumber, Button buttonView) {
-        // Текущее имя файла и громкость для этой кнопки
+        // имя файла и громкость для этой кнопки
         String audio = audioManager.getAudioForButton(buttonNumber);
         float currentVolume = audioManager.getVolumeForButton(buttonNumber);
 
-        // Корневой layout для содержимого диалога
+        // корневой лейаут для содержимого диалога
         android.widget.LinearLayout root = new android.widget.LinearLayout(this);
         root.setOrientation(android.widget.LinearLayout.VERTICAL);
         int pad = (int) (16 * getResources().getDisplayMetrics().density);
         root.setPadding(pad, pad, pad, pad);
 
-        // Текст с информацией: привязан ли файл
         android.widget.TextView bound = new android.widget.TextView(this);
         bound.setText(audio == null ? "Аудио не привязано" : ("Привязано: " + audio));
         root.addView(bound);
 
-        // Ползунок громкости 0–100%
+        // ползунок громкости
         android.widget.SeekBar seek = new android.widget.SeekBar(this);
         seek.setMax(100);
         seek.setProgress(Math.round(currentVolume * 100f));
         root.addView(seek);
 
-        // Текстовое отображение текущего значения громкости (в процентах)
         android.widget.TextView volText = new android.widget.TextView(this);
         volText.setText("Громкость: " + seek.getProgress() + "%");
         root.addView(volText);
@@ -184,13 +176,11 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
         });
 
-        // Собираем диалог
+        // собиранный диалог
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Кнопка " + buttonNumber)
                 .setView(root)
-                // Кнопка "Привязать"/"Изменить аудио" — открывает диалог выбора файла
                 .setPositiveButton(audio == null ? "Привязать" : "Изменить аудио", (d, w) -> showBindAudioDialog(buttonNumber, buttonView))
-                // Кнопка "Плей"/"Плей/Стоп" — управляет воспроизведением
                 .setNeutralButton(audio == null ? "Плей" : "Плей/Стоп", (d, w) -> {
                     if (audioManager.hasAudio(buttonNumber)) {
                         audioManager.toggleButton(buttonNumber, buttonView);
@@ -202,16 +192,15 @@ public class MainActivity extends AppCompatActivity {
                 .create();
 
         dialog.setOnShowListener(dlg -> {
-            // При открытии диалога подменяем кнопку "Закрыть" на "Отвязать",
-            // если к кнопке уже привязан файл.
+            // меняем кнопку на Отвязать
             if (audioManager.hasAudio(buttonNumber)) {
                 dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setText("Отвязать");
                 dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
-                    // Останавливаем и освобождаем плеер для этой кнопки
+                    // освобождаем плеер для этой кнопки
                     audioManager.releasePlayer(buttonNumber);
-                    // Удаляем привязку файла
+                    // удаляем привязку файла
                     audioManager.bindAudioToButton(buttonNumber, null);
-                    // Обновляем текст на кнопке (убираем имя файла и индикаторы)
+                    // обновляем текст на кнопке
                     updateButtonText(buttonView, buttonNumber);
                     Toast.makeText(this, "Аудио отвязано", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
@@ -220,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         dialog.setOnDismissListener(d -> {
-            // При закрытии диалога сохраняем выбранную громкость для этой кнопки
+            // при закрытии диалога сохраняем выбранную громкость для этой кнопки
             float vol = seek.getProgress() / 100f;
             audioManager.setVolumeForButton(buttonNumber, vol);
         });
@@ -229,10 +218,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Собрать список всех доступных аудиофайлов во внутренней папке приложения.
-     * Эта папка пополняется:
-     * - предзагруженными файлами из assets
-     * - файлами, которые пользователь импортировал через библиотеку.
+     * список всех доступных аудиофайлов во внутренней папке приложения.
      */
     private List<String> getAvailableAudioFiles() {
         List<String> audioFiles = new ArrayList<>();
@@ -251,8 +237,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Проверка расширения файла: считаем аудио допустимым,
-     * если оно имеет одно из распространённых аудио-расширений.
+     * проверка расширения файла
      */
     private boolean isAudioFile(String fileName) {
         String lower = fileName.toLowerCase();
@@ -262,15 +247,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Настраиваем ActivityResultLauncher для открытия библиотеки аудио.
-     * После возврата с экрана библиотеки обновляем подписи на кнопках, чтобы
-     * сразу увидеть новые/переименованные/удалённые файлы.
+     * ActivityResultLauncher для открытия библиотеки аудио
      */
     private void setupAudioLibraryLauncher() {
         audioLibraryLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    // Обновляем текст всех кнопок после возвращения из библиотеки
+                    // обновляем текст всех кнопок после возвращения из библиотеки
                     for (int i = 0; i <= 9; i++) {
                         int buttonId = getResources().getIdentifier("button_" + i, "id", getPackageName());
                         Button button = findViewById(buttonId);
@@ -286,8 +269,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (audioManager != null) {
-            // При уничтожении активности освобождаем все MediaPlayer,
-            // чтобы не было утечек ресурсов.
+            // освобождаем все MediaPlayer
             audioManager.releaseAll();
         }
     }
