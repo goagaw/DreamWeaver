@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Главный экран приложения: заголовок, сетка 2x5 кнопок и кнопка загрузки.
-    Внизу фиксированная панель "Рекомендации по использованию".
-    Всё помещается на экран без ScrollView.
--->
+
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -13,7 +9,6 @@
     android:background="@color/dark_background"
     tools:context=".MainActivity">
 
-    <!-- заголовок + сетка кнопок + кнопка загрузки -->
     <LinearLayout
         android:id="@+id/content_container"
         android:layout_width="0dp"
@@ -26,7 +21,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Заголовок над сеткой кнопок -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -36,7 +30,6 @@
             android:textStyle="bold"
             android:layout_marginBottom="12dp" />
 
-        <!-- Сетка кнопок 2 столбца x 5 рядов, занимает оставшееся место -->
         <GridLayout
             android:id="@+id/buttons_grid"
             android:layout_width="match_parent"
@@ -182,7 +175,6 @@
 
         </GridLayout>
 
-        <!-- экран библиотеки аудиофайлов -->
         <Button
             android:id="@+id/audio_library_button"
             android:layout_width="match_parent"
@@ -199,7 +191,6 @@
 
     </LinearLayout>
 
-    <!-- Нижняя фиксированная панель (гайд) -->
     <LinearLayout
         android:id="@+id/bottom_panel"
         android:layout_width="match_parent"
