@@ -1,8 +1,11 @@
 package com.example.dreamweaver;
 
+import android.Manifest;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -28,10 +31,16 @@ public class MainActivity extends AppCompatActivity {
      */
     private AudioButtonManager audioManager;
 
+    private BluetoothHc05Manager bluetoothManager;
+
+    private TextView bluetoothStatusText;
+
     /**
      * лаунчер для запуска активности библиотеки аудио и получения результата
      */
     private ActivityResultLauncher<Intent> audioLibraryLauncher;
+
+    private ActivityResultLauncher<String[]> bluetoothPermissionLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,16 +55,33 @@ public class MainActivity extends AppCompatActivity {
         });
 
         audioManager = new AudioButtonManager(this);
+        bluetoothManager = new BluetoothHc05Manager(this);
+        bluetoothStatusText = findViewById(R.id.bluetooth_status_text);
 
         setupButtons();
 
         setupAudioLibraryLauncher();
+        setupBluetoothPermissionLauncher();
+
+        Button connectBluetoothButton = findViewById(R.id.connect_bluetooth_button);
+        connectBluetoothButton.setOnClickListener(v -> handleBluetoothConnectClick());
+
+        Button sendConfigButton = findViewById(R.id.send_config_button);
+        sendConfigButton.setOnClickListener(v -> sendButtonConfigToDevice());
+
+        setupDeviceCommandButtons();
 
         // Кнопка Загрузить аудио открывает библиотеку файлов
         Button audioLibraryButton = findViewById(R.id.audio_library_button);
         audioLibraryButton.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, AudioLibraryActivity.class);
             audioLibraryLauncher.launch(intent);
+        });
+
+        Button guideButton = findViewById(R.id.guide_button);
+        guideButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, GuideActivity.class);
+            startActivity(intent);
         });
     }
 
@@ -64,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
      * при нажатии на кнопку открывается меню с настройками этой кнопки.
      */
     private void setupButtons() {
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 1; i <= 9; i++) {
             // Собираем id по имени вида button_0, button_1, ...
             int buttonId = getResources().getIdentifier("button_" + i, "id", getPackageName());
             Button button = findViewById(buttonId);
@@ -175,6 +201,12 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {}
         });
 
+        Button playOnDeviceButton = new Button(this);
+        playOnDeviceButton.setText("Воспроизвести на устройстве");
+        playOnDeviceButton.setOnClickListener(v ->
+                sendDeviceCommand("PLAY:" + buttonNumber, "Команда PLAY отправлена"));
+        root.addView(playOnDeviceButton);
+
         // собиранный диалог
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Кнопка " + buttonNumber)
@@ -253,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     // обновляем текст всех кнопок после возвращения из библиотеки
-                    for (int i = 0; i <= 9; i++) {
+                    for (int i = 1; i <= 9; i++) {
                         int buttonId = getResources().getIdentifier("button_" + i, "id", getPackageName());
                         Button button = findViewById(buttonId);
                         if (button != null) {
@@ -264,12 +296,136 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
+    private void setupBluetoothPermissionLauncher() {
+        bluetoothPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                permissions -> {
+                    if (bluetoothManager.hasBluetoothConnectPermission()
+                            && bluetoothManager.hasBluetoothScanPermission()) {
+                        connectToHc05();
+                    } else {
+                        bluetoothStatusText.setText("Bluetooth: нет разрешения");
+                        Toast.makeText(
+                                this,
+                                "Нет разрешения на поиск Bluetooth-устройств",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                }
+        );
+    }
+
+    private void handleBluetoothConnectClick() {
+        if (!bluetoothManager.hasBluetoothConnectPermission()
+                || !bluetoothManager.hasBluetoothScanPermission()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                bluetoothPermissionLauncher.launch(new String[]{
+                        Manifest.permission.BLUETOOTH_CONNECT,
+                        Manifest.permission.BLUETOOTH_SCAN
+                });
+            } else {
+                bluetoothPermissionLauncher.launch(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                });
+            }
+            return;
+        }
+
+        if (!bluetoothManager.isBluetoothAvailable()) {
+            bluetoothStatusText.setText("Bluetooth: недоступен");
+            Toast.makeText(this, "Bluetooth недоступен или выключен", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        connectToHc05();
+    }
+
+    private void connectToHc05() {
+        bluetoothStatusText.setText("Bluetooth: подключение...");
+        bluetoothManager.connectToPairedDevice("HC-05", new BluetoothHc05Manager.ConnectionCallback() {
+            @Override
+            public void onConnected(String deviceName) {
+                runOnUiThread(() -> {
+                    bluetoothStatusText.setText("Bluetooth: подключено к HC-05");
+                    Toast.makeText(MainActivity.this, "HC-05 подключён", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onConnectionFailed(String message) {
+                runOnUiThread(() -> {
+                    bluetoothStatusText.setText("Bluetooth: ошибка подключения");
+                    Toast.makeText(MainActivity.this, "Ошибка подключения: " + message, Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onDisconnected() {
+                runOnUiThread(() -> bluetoothStatusText.setText("Bluetooth: отключено"));
+            }
+        });
+    }
+
+    private void sendButtonConfigToDevice() {
+        if (bluetoothManager == null || !bluetoothManager.isConnected()) {
+            Toast.makeText(this, "Сначала подключитесь к HC-05", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        for (int buttonNumber = 1; buttonNumber <= 9; buttonNumber++) {
+            String trackNumber = String.format(java.util.Locale.US, "%03d", buttonNumber);
+            int volume = Math.round(audioManager.getVolumeForButton(buttonNumber) * 100f);
+            bluetoothManager.sendCommand("SET:" + buttonNumber + ":" + trackNumber + ":" + volume);
+        }
+        bluetoothManager.sendCommand("SAVE", createCommandCallback());
+    }
+
+    private void setupDeviceCommandButtons() {
+        Button stopButton = findViewById(R.id.button_0);
+        Button volumeDownButton = findViewById(R.id.button_star);
+        Button volumeUpButton = findViewById(R.id.button_hash);
+
+        stopButton.setOnClickListener(v -> sendDeviceCommand("STOP", "Команда остановки отправлена"));
+        volumeDownButton.setOnClickListener(v -> sendDeviceCommand("VOLDOWN", "Громкость уменьшена"));
+        volumeUpButton.setOnClickListener(v -> sendDeviceCommand("VOLUP", "Громкость увеличена"));
+    }
+
+    private void sendDeviceCommand(String command, String successMessage) {
+        if (bluetoothManager == null || !bluetoothManager.isConnected()) {
+            Toast.makeText(this, "Сначала подключитесь к HC-05", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        bluetoothManager.sendCommand(command, createCommandCallback());
+    }
+
+    private BluetoothHc05Manager.CommandCallback createCommandCallback() {
+        return new BluetoothHc05Manager.CommandCallback() {
+            @Override
+            public void onCommandSent() {
+                Toast.makeText(MainActivity.this, "Команда отправлена", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onCommandFailed(String message) {
+                Toast.makeText(
+                        MainActivity.this,
+                        "Команда не отправлена: " + message,
+                        Toast.LENGTH_SHORT
+                ).show();
+            }
+        };
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (audioManager != null) {
             // освобождаем все MediaPlayer
             audioManager.releaseAll();
+        }
+        if (bluetoothManager != null) {
+            bluetoothManager.close();
         }
     }
 

@@ -1,238 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/dark_background"
-    tools:context=".MainActivity">
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/main" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/dark_background" tools:context=".MainActivity">
 
-    <LinearLayout
-        android:id="@+id/content_container"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:gravity="center_horizontal"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/bottom_panel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+    <LinearLayout android:id="@+id/content_container" android:layout_width="0dp" android:layout_height="0dp" android:orientation="vertical" android:padding="16dp" android:gravity="center_horizontal" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Настройка кнопок"
-            android:textColor="@color/dark_text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="12dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Настройка кнопок" android:textColor="@color/dark_text_primary" android:textSize="20sp" android:textStyle="bold" android:layout_marginBottom="12dp" />
 
-        <GridLayout
-            android:id="@+id/buttons_grid"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:columnCount="2"
-            android:rowCount="5"
-            android:alignmentMode="alignMargins"
-            android:useDefaultMargins="false"
-            android:padding="6dp">
+        <LinearLayout android:id="@+id/bluetooth_panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="12dp">
 
-            <!-- height=0dp + layout_rowWeight=1 кнопки сами подстроятся по высоте -->
+            <TextView android:id="@+id/bluetooth_status_text" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Bluetooth: не подключено" android:textColor="@color/dark_text_primary" android:textSize="16sp" android:layout_marginBottom="8dp" />
 
-            <Button
-                android:id="@+id/button_0"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="0"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+            <Button android:id="@+id/connect_bluetooth_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Подключиться к HC-05" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" android:paddingStart="24dp" android:paddingEnd="24dp" android:paddingTop="12dp" android:paddingBottom="12dp" android:textSize="16sp" />
 
-            <Button
-                android:id="@+id/button_1"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="1"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+            <Button android:id="@+id/send_config_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Передать настройки на устройство" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" android:paddingStart="24dp" android:paddingEnd="24dp" android:paddingTop="12dp" android:paddingBottom="12dp" android:textSize="16sp" />
 
-            <Button
-                android:id="@+id/button_2"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="2"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+        </LinearLayout>
 
-            <Button
-                android:id="@+id/button_3"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="3"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+        <GridLayout android:id="@+id/buttons_grid" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:columnCount="3" android:rowCount="4" android:alignmentMode="alignMargins" android:useDefaultMargins="false" android:padding="6dp">
 
-            <Button
-                android:id="@+id/button_4"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="4"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+            <!-- height=0dp + layout_rowWeight=1 РєРЅРѕРїРєРё СЃР°РјРё РїРѕРґСЃС‚СЂРѕСЏС‚СЃСЏ РїРѕ РІС‹СЃРѕС‚Рµ -->
 
-            <Button
-                android:id="@+id/button_5"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="5"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+            <Button android:id="@+id/button_1" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="1" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
 
-            <Button
-                android:id="@+id/button_6"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="6"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+            <Button android:id="@+id/button_2" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="2" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
 
-            <Button
-                android:id="@+id/button_7"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="7"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+            <Button android:id="@+id/button_3" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="3" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
 
-            <Button
-                android:id="@+id/button_8"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="8"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+            <Button android:id="@+id/button_4" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="4" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
 
-            <Button
-                android:id="@+id/button_9"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_columnWeight="1"
-                android:layout_rowWeight="1"
-                android:layout_margin="6dp"
-                android:text="9"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:textColor="@color/dark_text_primary"
-                android:backgroundTint="@color/dark_accent" />
+            <Button android:id="@+id/button_5" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="5" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
+
+            <Button android:id="@+id/button_6" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="6" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
+
+            <Button android:id="@+id/button_7" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="7" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
+
+            <Button android:id="@+id/button_8" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="8" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
+
+            <Button android:id="@+id/button_9" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="9" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
+
+            <Button android:id="@+id/button_star" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="*" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
+
+            <Button android:id="@+id/button_0" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="0" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
+
+            <Button android:id="@+id/button_hash" android:layout_width="0dp" android:layout_height="0dp" android:layout_columnWeight="1" android:layout_rowWeight="1" android:layout_margin="6dp" android:text="#" android:textSize="24sp" android:gravity="center" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" />
 
         </GridLayout>
 
-        <Button
-            android:id="@+id/audio_library_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Загрузить аудио"
-            android:textColor="@color/dark_text_primary"
-            android:backgroundTint="@color/dark_accent"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:textSize="18sp" />
+        <Button android:id="@+id/audio_library_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Загрузить аудио" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" android:paddingStart="24dp" android:paddingEnd="24dp" android:paddingTop="14dp" android:paddingBottom="14dp" android:textSize="18sp" />
+
+        <Button android:id="@+id/guide_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Инструкция по использованию" android:textColor="@color/dark_text_primary" android:backgroundTint="@color/dark_accent" android:paddingStart="24dp" android:paddingEnd="24dp" android:paddingTop="14dp" android:paddingBottom="14dp" android:textSize="18sp" />
 
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/bottom_panel"
-        android:layout_width="match_parent"
-        android:layout_height="96dp"
-        android:background="@color/dark_panel"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <ImageView
-            android:id="@+id/bottom_logo"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginEnd="12dp"
-            android:contentDescription="@string/logo_description"
-            android:src="@drawable/logom"
-            android:scaleType="fitCenter" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Рекомендации по использованию"
-                android:textColor="@color/dark_text_primary"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:layout_marginBottom="4dp" />
-
-            <TextView
-                android:layout_width="match_parent" android:layout_height="wrap_content" android:text="• Загрузите аудиофайл при помощи кнопки загрузить аудио\n• Нажмите на кнопку чтобы привязать к ней аудиофайл и воспроизвести его" android:textColor="@color/dark_text_secondary" android:textSize="13sp" />
-        </LinearLayout>
-
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

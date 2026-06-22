@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/guide_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_background"
+    tools:context=".GuideActivity">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:text="Инструкция по использованию"
+            android:textColor="@color/dark_text_primary"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <TextView
+                android:id="@+id/guide_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="4dp"
+                android:text="Инструкция по использованию устройства&#10;&#10;Подготовка устройства к работе&#10;Перед началом работы необходимо убедиться, что устройство собрано и подключено к питанию. В MP3-модуль должна быть установлена microSD-карта с аудиофайлами. Аудиофайлы должны иметь имена 001.mp3, 002.mp3, 003.mp3 и далее.&#10;&#10;Подключение к устройству&#10;Для подключения к устройству необходимо включить Bluetooth на телефоне и выполнить сопряжение с модулем HC-05. После этого в приложении нужно нажать кнопку «Подключиться к HC-05». При успешном соединении статус Bluetooth на главном экране изменится.&#10;&#10;Загрузка аудиофайлов&#10;Для добавления аудиофайлов используется кнопка «Загрузить аудио». После выбора файла он сохраняется во внутренней памяти приложения и становится доступным в библиотеке аудиофайлов.&#10;&#10;Настройка кнопок&#10;Для настройки звукового сценария необходимо нажать одну из кнопок от 1 до 9. В открывшемся окне можно привязать аудиофайл, изменить громкость и проверить воспроизведение на устройстве.&#10;&#10;Передача настроек&#10;После настройки кнопок необходимо нажать кнопку «Передать настройки на устройство». Приложение отправит конфигурацию на Arduino через Bluetooth. После этого устройство сможет использовать переданные настройки.&#10;&#10;Управление устройством&#10;Кнопки 1-9 запускают соответствующие звуковые сценарии. Кнопка 0 останавливает воспроизведение. Кнопка * уменьшает громкость. Кнопка # увеличивает громкость.&#10;&#10;Проверка работы&#10;После передачи настроек следует нажать кнопку на физической клавиатуре устройства и проверить, что воспроизводится нужный аудиофайл. Также необходимо проверить остановку воспроизведения и изменение громкости.&#10;&#10;Возможные ошибки&#10;Если устройство не подключается, необходимо проверить питание HC-05 и наличие сопряжения с телефоном. Если звук не воспроизводится, необходимо проверить microSD-карту, имена файлов и подключение динамика."
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="16sp" />
+        </ScrollView>
+
+        <Button
+            android:id="@+id/guide_back_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/dark_accent"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="Назад"
+            android:textColor="@color/dark_text_primary"
+            android:textSize="18sp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
