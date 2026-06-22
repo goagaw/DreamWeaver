@@ -22,22 +22,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * сетка из 10 кнопок привязка аудиофайлов, их громкость и воспроизведение
+ * главный экран приложения
+ *
+ * здесь собирается основной сценарий работы: кнопки 1-9 открывают настройку звука,
+ * кнопки *, 0 и # отправляют команды на Arduino, а отдельные кнопки открывают
+ * библиотеку аудио и инструкцию
  */
 public class MainActivity extends AppCompatActivity {
 
-    /**
-     * привязки аудиофайлов к кнопкам и управление MediaPlayer
-     */
     private AudioButtonManager audioManager;
 
     private BluetoothHc05Manager bluetoothManager;
 
     private TextView bluetoothStatusText;
 
-    /**
-     * лаунчер для запуска активности библиотеки аудио и получения результата
-     */
     private ActivityResultLauncher<Intent> audioLibraryLauncher;
 
     private ActivityResultLauncher<String[]> bluetoothPermissionLauncher;
@@ -71,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
 
         setupDeviceCommandButtons();
 
-        // Кнопка Загрузить аудио открывает библиотеку файлов
         Button audioLibraryButton = findViewById(R.id.audio_library_button);
         audioLibraryButton.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, AudioLibraryActivity.class);
@@ -86,21 +83,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * находит все кнопки 0–9 в разметке и навешивает на них обработчики.
-     * при нажатии на кнопку открывается меню с настройками этой кнопки.
+     * находит кнопки 1-9 в разметке и навешивает на них обработчики
+     *
+     * эти девять кнопок являются ячейками звукового сценария, поэтому по нажатию
+     * открывается настройка выбранной кнопки
      */
     private void setupButtons() {
         for (int i = 1; i <= 9; i++) {
-            // Собираем id по имени вида button_0, button_1, ...
+            // кнопки 1-9 обрабатываются одним циклом, потому что это одинаковые ячейки сценария
+            // номер цикла становится номером сценария, который потом используется в PLAY:n и SET:i:track:volume
             int buttonId = getResources().getIdentifier("button_" + i, "id", getPackageName());
             Button button = findViewById(buttonId);
             if (button != null) {
                 final int buttonNumber = i;
-                // Обновляем текст кнопки (номер + имя файла, если привязано)
                 updateButtonText(button, buttonNumber);
                 
                 button.setOnClickListener(v -> {
-                    // При коротком нажатии сразу открываем диалог настроек этой кнопки
+                    // при нажатии открывается настройка именно того сценария, номер которого сохранён в buttonNumber
                     showButtonMenuDialog(buttonNumber, button);
                 });
             }
@@ -108,10 +107,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Обновить текст на конкретной кнопке:
-     * первая строка номер кнопки
-     * вторая строка имя файла, если привязан
-     * индикатор воспроизведения (▶) обновляется через AudioButtonManager
+     * обновляет текст на конкретной кнопке
+     * если файл привязан, вместо цифры показывается короткое имя файла
      */
     private void updateButtonText(Button button, int buttonNumber) {
         String audioFileName = audioManager.getAudioForButton(buttonNumber);
@@ -140,12 +137,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * диалог выбора аудиофайла из уже загруженных в папку приложения
+     * открывает выбор аудиофайла для конкретной кнопки сценария
+     * здесь пользователь выбирает файл из библиотеки, а выбранное имя сохраняется
+     * в настройках кнопки
      */
     private void showBindAudioDialog(int buttonNumber, Button buttonView) {
         List<String> audioFiles = getAvailableAudioFiles();
         if (audioFiles.isEmpty()) {
-            // если в библиотеке ещё нет файлов перенаправляет пользователя на экран библиотеки
+            // если библиотека пустая, отправляем пользователя сначала загрузить аудио
             Toast.makeText(this, "Нет загруженных аудиофайлов. Загрузите файлы в библиотеке.", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(this, AudioLibraryActivity.class);
             startActivity(intent);
@@ -166,14 +165,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Диалог настроек кнопки
+     * открывает настройку звукового сценария для одной кнопки 1-9
+     * в этом окне можно выбрать аудио, поменять громкость, запустить звук локально
+     * или отправить команду PLAY:n на Arduino
      */
     private void showButtonMenuDialog(int buttonNumber, Button buttonView) {
-        // имя файла и громкость для этой кнопки
+        // в диалоге берём сохранённые настройки конкретной кнопки, чтобы пользователь видел текущий сценарий
         String audio = audioManager.getAudioForButton(buttonNumber);
         float currentVolume = audioManager.getVolumeForButton(buttonNumber);
 
-        // корневой лейаут для содержимого диалога
         android.widget.LinearLayout root = new android.widget.LinearLayout(this);
         root.setOrientation(android.widget.LinearLayout.VERTICAL);
         int pad = (int) (16 * getResources().getDisplayMetrics().density);
@@ -183,7 +183,6 @@ public class MainActivity extends AppCompatActivity {
         bound.setText(audio == null ? "Аудио не привязано" : ("Привязано: " + audio));
         root.addView(bound);
 
-        // ползунок громкости
         android.widget.SeekBar seek = new android.widget.SeekBar(this);
         seek.setMax(100);
         seek.setProgress(Math.round(currentVolume * 100f));
@@ -193,6 +192,7 @@ public class MainActivity extends AppCompatActivity {
         volText.setText("Громкость: " + seek.getProgress() + "%");
         root.addView(volText);
 
+        // нужен полный интерфейс слушателя seekbar, но для проекта используется только изменение значения громкости
         seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
                 volText.setText("Громкость: " + progress + "%");
@@ -203,11 +203,12 @@ public class MainActivity extends AppCompatActivity {
 
         Button playOnDeviceButton = new Button(this);
         playOnDeviceButton.setText("Воспроизвести на устройстве");
+        // команда PLAY состоит из слова PLAY и номера сценария, например PLAY:1
+        // arduino по этому номеру понимает, какой звук или сценарий надо запустить
         playOnDeviceButton.setOnClickListener(v ->
-                sendDeviceCommand("PLAY:" + buttonNumber, "Команда PLAY отправлена"));
+                sendDeviceCommand("PLAY:" + buttonNumber));
         root.addView(playOnDeviceButton);
 
-        // собиранный диалог
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Кнопка " + buttonNumber)
                 .setView(root)
@@ -223,15 +224,12 @@ public class MainActivity extends AppCompatActivity {
                 .create();
 
         dialog.setOnShowListener(dlg -> {
-            // меняем кнопку на Отвязать
             if (audioManager.hasAudio(buttonNumber)) {
                 dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setText("Отвязать");
                 dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
-                    // освобождаем плеер для этой кнопки
+                    // при отвязке освобождаем плеер и удаляем сохранённое имя файла
                     audioManager.releasePlayer(buttonNumber);
-                    // удаляем привязку файла
                     audioManager.bindAudioToButton(buttonNumber, null);
-                    // обновляем текст на кнопке
                     updateButtonText(buttonView, buttonNumber);
                     Toast.makeText(this, "Аудио отвязано", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
@@ -249,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * список всех доступных аудиофайлов во внутренней папке приложения.
+     * собирает список всех доступных аудиофайлов во внутренней папке приложения
      */
     private List<String> getAvailableAudioFiles() {
         List<String> audioFiles = new ArrayList<>();
@@ -278,13 +276,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * ActivityResultLauncher для открытия библиотеки аудио
+     * лаунчер для открытия библиотеки аудио
+     *
+     * когда пользователь возвращается из библиотеки, подписи кнопок 1-9 обновляются
      */
     private void setupAudioLibraryLauncher() {
         audioLibraryLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    // обновляем текст всех кнопок после возвращения из библиотеки
+                    // после возврата из библиотеки перечитываем привязки, потому что файл могли переименовать или удалить
                     for (int i = 1; i <= 9; i++) {
                         int buttonId = getResources().getIdentifier("button_" + i, "id", getPackageName());
                         Button button = findViewById(buttonId);
@@ -300,6 +300,7 @@ public class MainActivity extends AppCompatActivity {
         bluetoothPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
                 permissions -> {
+                    // после ответа пользователя сразу продолжаем подключение, если все нужные разрешения получены
                     if (bluetoothManager.hasBluetoothConnectPermission()
                             && bluetoothManager.hasBluetoothScanPermission()) {
                         connectToHc05();
@@ -316,6 +317,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleBluetoothConnectClick() {
+        // перед подключением Android требует проверить Bluetooth-разрешения
+        // на Android 12 и выше нужны BLUETOOTH_CONNECT и BLUETOOTH_SCAN
         if (!bluetoothManager.hasBluetoothConnectPermission()
                 || !bluetoothManager.hasBluetoothScanPermission()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -342,6 +345,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void connectToHc05() {
         bluetoothStatusText.setText("Bluetooth: подключение...");
+        // запускаем подключение к Bluetooth-модулю через менеджер
+        // внутри сначала пробуется HC-05, а потом BLE-вариант по сохранённому MAC
         bluetoothManager.connectToPairedDevice("HC-05", new BluetoothHc05Manager.ConnectionCallback() {
             @Override
             public void onConnected(String deviceName) {
@@ -368,15 +373,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendButtonConfigToDevice() {
         if (bluetoothManager == null || !bluetoothManager.isConnected()) {
+            // без подключения Arduino не получит SET и SAVE, поэтому сначала останавливаем отправку
             Toast.makeText(this, "Сначала подключитесь к HC-05", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // команда SET передаёт Arduino номер кнопки, номер трека и громкость этой кнопки
+        // цикл проходит по всем сценариям 1-9, чтобы устройство получило полную текущую настройку
         for (int buttonNumber = 1; buttonNumber <= 9; buttonNumber++) {
+            // номер трека передаётся в формате 001, 002 и так далее, как ожидает прошивка
             String trackNumber = String.format(java.util.Locale.US, "%03d", buttonNumber);
+            // громкость в приложении хранится от 0 до 1, а Arduino получает проценты от 0 до 100
             int volume = Math.round(audioManager.getVolumeForButton(buttonNumber) * 100f);
             bluetoothManager.sendCommand("SET:" + buttonNumber + ":" + trackNumber + ":" + volume);
         }
+        // команда SAVE отправляется после всех SET, чтобы Arduino сохранила весь сценарий
         bluetoothManager.sendCommand("SAVE", createCommandCallback());
     }
 
@@ -385,17 +396,22 @@ public class MainActivity extends AppCompatActivity {
         Button volumeDownButton = findViewById(R.id.button_star);
         Button volumeUpButton = findViewById(R.id.button_hash);
 
-        stopButton.setOnClickListener(v -> sendDeviceCommand("STOP", "Команда остановки отправлена"));
-        volumeDownButton.setOnClickListener(v -> sendDeviceCommand("VOLDOWN", "Громкость уменьшена"));
-        volumeUpButton.setOnClickListener(v -> sendDeviceCommand("VOLUP", "Громкость увеличена"));
+        // здесь связываем кнопки приложения с командами, которые понимает Arduino
+        // * уменьшает громкость, 0 останавливает звук, # увеличивает громкость
+        // эти кнопки не открывают диалог сценария, потому что это прямое управление устройством
+        stopButton.setOnClickListener(v -> sendDeviceCommand("STOP"));
+        volumeDownButton.setOnClickListener(v -> sendDeviceCommand("VOLDOWN"));
+        volumeUpButton.setOnClickListener(v -> sendDeviceCommand("VOLUP"));
     }
 
-    private void sendDeviceCommand(String command, String successMessage) {
+    private void sendDeviceCommand(String command) {
         if (bluetoothManager == null || !bluetoothManager.isConnected()) {
+            // проверка нужна, чтобы не пытаться отправить команду без активного Bluetooth-соединения
             Toast.makeText(this, "Сначала подключитесь к HC-05", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // команда уже собрана выше, здесь она уходит в Bluetooth-менеджер
         bluetoothManager.sendCommand(command, createCommandCallback());
     }
 
@@ -421,7 +437,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (audioManager != null) {
-            // освобождаем все MediaPlayer
             audioManager.releaseAll();
         }
         if (bluetoothManager != null) {

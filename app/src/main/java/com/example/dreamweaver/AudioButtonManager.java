@@ -10,9 +10,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * привязку аудиофайлов к кнопкам (0–9)
- * создание и управление MediaPlayer для каждой кнопки
- * сохранение имя файла, громкость в SharedPreferences, чтобы настройки между запусками не слетали
+ * здесь хранится информация о кнопках и привязанных аудиофайлах
+ *
+ * для каждой кнопки сохраняется имя файла и громкость, а MediaPlayer создаётся
+ * только когда пользователь запускает звук
  */
 public class AudioButtonManager {
     private static final String PREFS_NAME = "audio_button_prefs";
@@ -23,141 +24,136 @@ public class AudioButtonManager {
 
     private static final float DEFAULT_VOLUME = 1.0f;
 
-    /**
-     * доступ к файлам и SharedPreferences
-     */
     private Context context;
 
-    /**
-     * объект SharedPreferences, в котором мы храним все привязки и настройки
-     */
+    // в SharedPreferences хранятся привязки кнопок к файлам и громкость каждой кнопки
+    // это нужно, чтобы сценарий не сбрасывался после закрытия приложения
     private SharedPreferences prefs;
 
-    /**
-     * для каждой кнопки создаём свой MediaPlayer, чтобы можно было независимо управлять
-     */
+    // в этой map лежат только уже созданные MediaPlayer
+    // ключом является номер кнопки, чтобы у каждой кнопки был свой отдельный плеер
     private Map<Integer, MediaPlayer> players;
 
-    /**
-     * проигрывается ли звук
-     */
+    // отдельно храним состояние воспроизведения, потому что MediaPlayer не используется как единственный источник состояния кнопки
     private Map<Integer, Boolean> isPlaying;
 
-    /**
-     * Инициализируем SharedPreferences и вспомогательные словари
-     * context контекст, через который получаем доступ к ресурсам приложения
-     */
     public AudioButtonManager(Context context) {
         this.context = context;
+        // здесь открываем SharedPreferences, где будут храниться выбранные файлы и громкость кнопок
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.players = new HashMap<>();
         this.isPlaying = new HashMap<>();
     }
 
     /**
-     * привязка или отвязка аудиофайла к кнопке.
+     * привязка хранится в SharedPreferences, поэтому она остаётся после перезапуска приложения
      */
     public void bindAudioToButton(int buttonNumber, String audioFileName) {
+        // если audioFileName равен null, значит пользователь отвязывает файл от кнопки
+        // если имя не null, сохраняем новую привязку и очищаем старый плеер
         if (audioFileName == null) {
 
             prefs.edit().remove(KEY_PREFIX + buttonNumber).apply();
-            // при отвязке также освобождаем MediaPlayer, если он был создан
+            // если файл отвязали, старый MediaPlayer больше не нужен и его надо освободить
             releasePlayer(buttonNumber);
         } else {
-            // сохраняем имя аудиофайла для этой кнопки
+            // sharedPreferences сохраняет имя файла по ключу конкретной кнопки
             prefs.edit().putString(KEY_PREFIX + buttonNumber, audioFileName).apply();
+            // при смене файла старый MediaPlayer нельзя оставлять, потому что он был создан для другого аудио
             releasePlayer(buttonNumber);
         }
     }
 
-    /**
-     * Получить имя файла, привязанного к кнопке.
-     */
     public String getAudioForButton(int buttonNumber) {
         return prefs.getString(KEY_PREFIX + buttonNumber, null);
     }
 
     /**
-     * Сохранить и применить громкость для конкретной кнопки.
+     * громкость тоже хранится отдельно для каждой кнопки сценария
      */
     public void setVolumeForButton(int buttonNumber, float volume) {
-        // ограничиваем громкость от 0 до 1
+        // ограничиваем значение диапазоном MediaPlayer от 0 до 1, чтобы не сохранить некорректную громкость
         float clamped = Math.max(0f, Math.min(1f, volume));
-        // сохраняет значение в SharedPreferences
         prefs.edit().putFloat(VOLUME_PREFIX + buttonNumber, clamped).apply();
-        // если MediaPlayer для этой кнопки уже создан  сразу применяем громкость к нему
+
+        // если плеер для кнопки уже создан, применяем громкость сразу к текущему предпрослушиванию
         MediaPlayer player = players.get(buttonNumber);
         if (player != null) {
             player.setVolume(clamped, clamped);
         }
     }
 
-    /**
-     * Получить сохранённую громкость для кнопки.
-     * Если пользователь ещё не менял громкость — вернётся DEFAULT_VOLUME.
-     */
     public float getVolumeForButton(int buttonNumber) {
         return prefs.getFloat(VOLUME_PREFIX + buttonNumber, DEFAULT_VOLUME);
     }
 
     /**
-     * Переключить состояние кнопки: начать или остановить воспроизведение.
+     * запускает или останавливает локальное воспроизведение для кнопки 1-9
      */
     public void toggleButton(int buttonNumber, Button buttonView) {
+        // сначала берём имя файла из сохранённых настроек кнопки
+        // если файла нет, локально проигрывать нечего
         String audioFileName = getAudioForButton(buttonNumber);
         if (audioFileName == null) {
-            // на кнопку ещё не привязан файл
             return;
         }
 
-        // берёт уже созданный MediaPlayer для этой кнопки, если он есть
+        // получаем MediaPlayer, который уже был создан для этой кнопки
+        // если его нет, ниже создадим новый и положим в players
         MediaPlayer player = players.get(buttonNumber);
-        // играет ли сейчас звук
         boolean playing = isPlaying.getOrDefault(buttonNumber, false);
 
         if (playing) {
-            // если сейчас играет останавливаем воспроизведение
             if (player != null) {
-                // ставит на паузу и возвращаемся в начало
+                // для предпрослушивания повторное нажатие останавливает звук и возвращает трек в начало
                 player.pause();
                 player.seekTo(0);
             }
+
+            // состояние кнопки меняем отдельно, чтобы интерфейс сразу убрал индикатор воспроизведения
             isPlaying.put(buttonNumber, false);
             updateButtonAppearance(buttonView, false);
         } else {
-            // если не играет запускаем воспроизведение
+            // работа с MediaPlayer и файлом может дать ошибку, поэтому запуск обёрнут в try/catch
             try {
                 if (player == null) {
-                    // Создаём новый MediaPlayer, если его ещё не было
+                    // плеер создаётся только при первом запуске, чтобы не держать лишние ресурсы
                     File audioFile = AudioLibraryActivity.getAudioFile(context, audioFileName);
                     if (!audioFile.exists()) {
-                        // если файл исчез выходим
                         return;
                     }
+
+                    // объект MediaPlayer работает с конкретным файлом, поэтому создаём его только после проверки файла
                     player = new MediaPlayer();
                     player.setDataSource(audioFile.getAbsolutePath());
-                    // подготавливает плеер
+
+                    // prepare загружает данные файла и подготавливает плеер к запуску
+                    // без этого start может упасть или не начать воспроизведение
                     player.prepare();
-                    // применяет сохранённую громкость для этой кнопки
+
+                    // перед запуском берём сохранённую громкость именно этой кнопки
                     float vol = getVolumeForButton(buttonNumber);
                     player.setVolume(vol, vol);
-                    // сохраняет плеер в словарь по номеру кнопки
+
+                    // сохраняем MediaPlayer в map, чтобы повторный запуск не создавал новый объект каждый раз
                     players.put(buttonNumber, player);
 
-                    // вызывается, когда трек доиграл до конца
+                    // когда аудио дошло до конца, нужно сбросить состояние и убрать значок ▶ с кнопки
                     player.setOnCompletionListener(mp -> {
                         isPlaying.put(buttonNumber, false);
                         updateButtonAppearance(buttonView, false);
                     });
                 } else {
-                    // если плеер уже создан просто перематывает в начало
+                    // если плеер уже есть, начинаем предпрослушивание заново с начала файла
                     player.seekTo(0);
                 }
-                // запускает воспроизведение
+
+                // start запускает локальное предпрослушивание на телефоне, не на Arduino
                 player.start();
                 isPlaying.put(buttonNumber, true);
                 updateButtonAppearance(buttonView, true);
             } catch (Exception e) {
+                // при проблемах с файлом или MediaPlayer выводим ошибку в лог для отладки
                 e.printStackTrace();
             }
         }
@@ -165,14 +161,10 @@ public class AudioButtonManager {
 
 
     /**
-     * Обновление текста на кнопке в зависимости от состояния какая цифра и какое имя файла
-     * показывает ли индикатор воспроизведения (▶)
+     * индикатор ▶ добавляется к тексту кнопки только во время локального воспроизведения
      */
     private void updateButtonAppearance(Button button, boolean playing) {
         String currentText = button.getText().toString();
-        // Разбиваем текущий текст на строки
-        // первая строка  номер кнопки, вторая имя файла
-        // в скобках иконка состояния (▶).
         String[] lines = currentText.split("\n");
         String baseText = lines[0].replaceAll("\\s*\\(.*\\)", "").trim();
         String fileName = "";
@@ -184,58 +176,67 @@ public class AudioButtonManager {
         if (!fileName.isEmpty()) {
             text += "\n" + fileName;
         }
-        // индикатор состояния воспроизведения
         if (playing) {
             text += " (▶)";
         }
         button.setText(text);
     }
 
-    /**
-     * освободить MediaPlayer для конкретной кнопки
-     * вызывается при отвязке аудио или при смене файла
-     */
     public void releasePlayer(int buttonNumber) {
+        // освобождаем MediaPlayer для конкретной кнопки
+        // это нужно, чтобы приложение не держало аудиоресурсы после остановки или удаления файла
+        // получаем MediaPlayer, который связан с конкретной кнопкой
         MediaPlayer player = players.get(buttonNumber);
         if (player != null) {
+            // stop и release могут выбросить исключение, если плеер уже в неправильном состоянии
+            // поэтому освобождение делаем через try/catch и не даём приложению упасть
             try {
+                // если аудио сейчас проигрывается, сначала останавливаем его
                 if (player.isPlaying()) {
                     player.stop();
                 }
+
+                // release освобождает ресурсы MediaPlayer, чтобы приложение не держало звук и системные ресурсы
                 player.release();
             } catch (Exception e) {
+                // выводим ошибку в лог, чтобы при отладке было видно проблему с освобождением плеера
                 e.printStackTrace();
             }
+
+            // после release объект MediaPlayer использовать уже нельзя, поэтому удаляем его из map
             players.remove(buttonNumber);
         }
+
+        // удаляем состояние воспроизведения для этой кнопки, потому что плеер уже освобождён
         isPlaying.remove(buttonNumber);
     }
 
-    /**
-     * освободить все MediaPlayer для всех кнопок
-     */
     public void releaseAll() {
+        // при закрытии экрана проходим по всем созданным MediaPlayer и освобождаем каждый из них
+        // цикл нужен, потому что у разных кнопок могут быть разные активные плееры
         for (Map.Entry<Integer, MediaPlayer> entry : players.entrySet()) {
             entry.getValue().release();
         }
+
+        // очищаем map плееров, потому что все объекты MediaPlayer уже освобождены
         players.clear();
+
+        // очищаем состояния воспроизведения, чтобы не осталось старых данных после закрытия экрана
         isPlaying.clear();
     }
 
-    /**
-     * привязан ли к кнопке какой-либо аудиофайл
-     */
     public boolean hasAudio(int buttonNumber) {
         return getAudioForButton(buttonNumber) != null;
     }
 
     /**
-     * переименовании файла в библиотеке, чтобы кнопки продолжали ссылаться на новый файл
+     * после переименования файла в библиотеке кнопки должны ссылаться на новое имя
      */
     public static void replaceAudioFilenameInBindings(Context context, String oldName, String newName) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         boolean changed = false;
+        // проверяем все кнопки, потому что один и тот же файл мог быть привязан к нескольким сценариям
         for (int i = 0; i <= 9; i++) {
             String key = KEY_PREFIX + i;
             String current = prefs.getString(key, null);
@@ -250,12 +251,13 @@ public class AudioButtonManager {
     }
 
     /**
-     * удалить все привязки кнопок к файлу с указанным именем, при удалении из библиотеки
+     * после удаления файла очищаем все кнопки, которые на него ссылались
      */
     public static void removeBindingsForFilename(Context context, String fileName) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         boolean changed = false;
+        // при удалении файла проходим по всем кнопкам и убираем ссылки на несуществующее аудио
         for (int i = 0; i <= 9; i++) {
             String key = KEY_PREFIX + i;
             String current = prefs.getString(key, null);
@@ -269,4 +271,3 @@ public class AudioButtonManager {
         }
     }
 }
-

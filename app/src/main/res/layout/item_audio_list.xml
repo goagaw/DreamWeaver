@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Отдельный layout нужен, чтобы задать белый цвет текста и отступы
-    на тёмном фоне.
+    белый цвет текста и отступы на тёмном фоне.
 -->
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/audio_item_text"

@@ -33,6 +33,13 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * здесь находится вся работа с Bluetooth-модулем и отправкой команд на Arduino
+ *
+ * сначала приложение пробует обычное подключение HC-05, а если оно не подошло,
+ * пробует BLE UART по сохранённому MAC-адресу
+ * uuid ниже нужны для классического SPP и BLE UART-сервисов
+ */
 public class BluetoothHc05Manager {
     private static final String TAG = "DreamWeaverBluetooth";
     private static final String TARGET_BLE_ADDRESS = "EC:04:0C:AF:3B:01";
@@ -88,6 +95,7 @@ public class BluetoothHc05Manager {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !hasBluetoothConnectPermission()) {
             return false;
         }
+        // состояние Bluetooth читается через системный API, поэтому защищаемся от SecurityException
         try {
             return bluetoothAdapter.isEnabled();
         } catch (SecurityException e) {
@@ -111,6 +119,7 @@ public class BluetoothHc05Manager {
     }
 
     public void connectToPairedDevice(String deviceName, ConnectionCallback callback) {
+        // без этих разрешений Android не даст искать устройство и открывать соединение
         if (!hasBluetoothConnectPermission()) {
             notifyConnectionFailed(callback, "Нет разрешения BLUETOOTH_CONNECT");
             return;
@@ -127,11 +136,13 @@ public class BluetoothHc05Manager {
         close();
         final int generation;
         synchronized (this) {
+            // generation нужен, чтобы старые потоки подключения не могли перезаписать новое состояние
             activeCallback = callback;
             generation = connectionGeneration;
         }
 
         connectionThread = new Thread(() -> {
+            // сначала ищем уже сопряжённый HC-05, потому что это основной вариант подключения
             BluetoothDevice bondedDevice = findPairedDevice(deviceName);
             Exception classicException = null;
             if (bondedDevice != null) {
@@ -145,6 +156,7 @@ public class BluetoothHc05Manager {
             String classicError = bondedDevice == null
                     ? "сопряжённое устройство HC-05 не найдено"
                     : getExceptionMessage(classicException);
+            // если обычный HC-05 не подключился, пробуем BLE-подключение по MAC-адресу
             startBleScan(deviceName, classicError, callback, generation);
         }, "HC-05-Connection");
         connectionThread.start();
@@ -156,17 +168,23 @@ public class BluetoothHc05Manager {
             int generation
     ) {
         Exception lastException = null;
+        // uuid SPP_UUID используется для классического serial-подключения HC-05
+        // несколько вариантов сокета нужны из-за различий в прошивках модулей
         SocketFactory[] socketFactories = new SocketFactory[]{
                 () -> device.createRfcommSocketToServiceRecord(SPP_UUID),
                 () -> device.createInsecureRfcommSocketToServiceRecord(SPP_UUID),
                 () -> createChannelOneSocket(device)
         };
 
+        // перебираем варианты создания сокета, пока один из них не даст рабочее подключение
+        // если все варианты не подошли, ошибка вернётся выше и начнётся BLE-попытка
         for (SocketFactory socketFactory : socketFactories) {
             if (!isCurrentGeneration(generation) || Thread.currentThread().isInterrupted()) {
                 return new IOException("Подключение отменено");
             }
             BluetoothSocket connectedSocket = null;
+            // каждая попытка подключения может упасть из-за занятого канала, прав или недоступного модуля
+            // поэтому отдельная попытка изолирована в try/catch
             try {
                 connectedSocket = connectSocket(socketFactory, generation);
                 OutputStream connectedOutputStream = connectedSocket.getOutputStream();
@@ -191,6 +209,8 @@ public class BluetoothHc05Manager {
 
     private BluetoothSocket connectSocket(SocketFactory socketFactory, int generation)
             throws Exception {
+        // объект BluetoothSocket это канал для классического Bluetooth-соединения
+        // через него приложение получает OutputStream и отправляет Arduino текстовые команды
         BluetoothSocket candidateSocket = socketFactory.create();
         synchronized (this) {
             if (generation != connectionGeneration) {
@@ -201,10 +221,14 @@ public class BluetoothHc05Manager {
             outputStream = null;
         }
         try {
+            // перед соединением отключаем discovery, потому что поиск устройств мешает стабильному подключению
             bluetoothAdapter.cancelDiscovery();
+
+            // connect открывает реальное соединение с модулем, дальше можно получать поток вывода
             candidateSocket.connect();
             return candidateSocket;
         } catch (Exception e) {
+            // если попытка не удалась, временный сокет закрывается и не остаётся в состоянии менеджера
             closeAttemptSocket(candidateSocket);
             throw e;
         }
@@ -219,6 +243,8 @@ public class BluetoothHc05Manager {
         if (!isCurrentGeneration(generation)) {
             return;
         }
+        // запуск BLE-сканирования требует разрешений и может упасть на уровне Android
+        // поэтому весь блок находится в try/catch
         try {
             BluetoothLeScanner scanner = bluetoothAdapter.getBluetoothLeScanner();
             if (scanner == null) {
@@ -263,6 +289,7 @@ public class BluetoothHc05Manager {
                     connectDirectGatt(callback, generation);
                 };
             }
+            // ble-сканирование ищет именно модуль с TARGET_BLE_ADDRESS
             scanner.startScan(scanCallback);
             mainHandler.postDelayed(bleTimeoutRunnable, BLE_SCAN_TIMEOUT_MS);
         } catch (SecurityException e) {
@@ -294,6 +321,7 @@ public class BluetoothHc05Manager {
         Log.d(TAG, "BLE found: name=" + displayName
                 + ", address=" + address + ", rssi=" + result.getRssi());
 
+        // mac нужен, чтобы не подключиться к чужому BLE-устройству с похожим именем
         if (TARGET_BLE_ADDRESS.equalsIgnoreCase(address)) {
             synchronized (this) {
                 if (targetSeenDuringScan) {
@@ -320,6 +348,7 @@ public class BluetoothHc05Manager {
         if (!isCurrentGeneration(generation) || targetSeenDuringScan) {
             return;
         }
+        // если сканирование не увидело модуль, пробуем прямое GATT-подключение по сохранённому MAC
         try {
             BluetoothDevice target = bluetoothAdapter.getRemoteDevice(TARGET_BLE_ADDRESS);
             Log.i(TAG, "BLE target not seen in scan; trying direct GATT: "
@@ -343,6 +372,8 @@ public class BluetoothHc05Manager {
         closeGatt(bluetoothGatt);
         Log.i(TAG, "Selected BLE device: " + describeDevice(device));
 
+        // после BLE-подключения ищем writable characteristic, через неё уходят команды
+        // объект BluetoothGatt это BLE-соединение, в нём команды пишутся не в stream, а в characteristic
         BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -427,7 +458,11 @@ public class BluetoothHc05Manager {
             }
         };
 
+        // создание GATT-соединения зависит от версии Android и разрешений Bluetooth
+        // если соединение не создастся, дальше будет вызвана ошибка подключения
         try {
+            // здесь создаётся BLE GATT-соединение с найденным устройством
+            // callback выше получит событие подключения и потом запустит поиск сервисов
             BluetoothGatt gatt = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                     ? device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
                     : device.connectGatt(context, false, gattCallback);
@@ -461,6 +496,7 @@ public class BluetoothHc05Manager {
     private void failCurrentCandidate(BluetoothGatt gatt, String error, int generation) {
         lastBleError = error;
         cancelBleTimeout();
+        // если текущий BLE-кандидат не подошёл, GATT нужно закрыть, чтобы не держать соединение
         closeGatt(gatt);
         notifyTargetConnectionFailed(generation);
     }
@@ -477,6 +513,7 @@ public class BluetoothHc05Manager {
     }
 
     private void logGattDatabase(BluetoothGatt gatt) {
+        // выводим найденные сервисы и характеристики в лог, чтобы на защите и отладке было видно, что нашёл модуль
         for (BluetoothGattService service : gatt.getServices()) {
             Log.i(TAG, "GATT service: " + service.getUuid());
             for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
@@ -488,6 +525,7 @@ public class BluetoothHc05Manager {
     }
 
     private BluetoothGattCharacteristic findWritableCharacteristic(BluetoothGatt gatt) {
+        // сначала ищем известные UART UUID, затем запасной вариант с любой writable-характеристикой
         BluetoothGattCharacteristic characteristic =
                 findCharacteristic(gatt, HM10_UART_SERVICE_UUID, HM10_UART_WRITE_UUID);
         if (isWritable(characteristic)) {
@@ -497,6 +535,7 @@ public class BluetoothHc05Manager {
         if (isWritable(characteristic)) {
             return characteristic;
         }
+        // если известные UUID не подошли, перебираем все сервисы и ищем любую характеристику с записью
         for (BluetoothGattService service : gatt.getServices()) {
             for (BluetoothGattCharacteristic candidate : service.getCharacteristics()) {
                 if (isWritable(candidate)) {
@@ -534,9 +573,14 @@ public class BluetoothHc05Manager {
             notifyCommandFailed(callback, "пустая команда");
             return;
         }
+        // arduino читает команды строками, поэтому к каждой команде добавляется перевод строки
+        // bluetooth передаёт байты, поэтому строковая команда переводится в UTF-8 byte[]
         byte[] data = (command + "\n").getBytes(StandardCharsets.UTF_8);
         if (outputStream != null) {
+            // блок classic-отправки обёрнут в try/catch, потому что поток может закрыться во время записи
             try {
+                // при классическом подключении строка команды пишется прямо в OutputStream
+                // именно здесь байты команды уходят на Arduino через HC-05
                 outputStream.write(data);
                 outputStream.flush();
                 Log.i(TAG, "Classic command written: " + command);
@@ -548,6 +592,7 @@ public class BluetoothHc05Manager {
             return;
         }
         if (bleConnected && bluetoothGatt != null && writableCharacteristic != null) {
+            // в BLE нельзя надёжно писать несколько команд сразу, поэтому используется очередь
             bleWriteQueue.offer(new PendingCommand(command, data, callback));
             writeNextBleCommand();
         } else {
@@ -571,15 +616,19 @@ public class BluetoothHc05Manager {
         int writeType = (properties & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0
                 ? BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
                 : BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
+        // запись в BLE characteristic может не стартовать из-за прав, разрыва соединения или состояния GATT
+        // поэтому запуск записи находится в try/catch
         try {
             boolean started;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // на новых версиях Android значение characteristic передаётся прямо в writeCharacteristic
                 started = bluetoothGatt.writeCharacteristic(
                         writableCharacteristic,
                         data,
                         writeType
                 ) == BluetoothStatusCodes.SUCCESS;
             } else {
+                // на старых версиях Android данные сначала кладутся в characteristic, потом запускается запись
                 writableCharacteristic.setWriteType(writeType);
                 writableCharacteristic.setValue(data);
                 started = bluetoothGatt.writeCharacteristic(writableCharacteristic);
@@ -655,6 +704,7 @@ public class BluetoothHc05Manager {
     private synchronized void failBleWrites(String reason) {
         cancelBleWriteTimeout();
         Log.e(TAG, "BLE command failed: " + reason);
+        // если BLE-запись сломалась, ошибку получают все команды, которые ещё ждали отправки
         while (!bleWriteQueue.isEmpty()) {
             PendingCommand failedCommand = bleWriteQueue.poll();
             notifyCommandFailed(failedCommand.callback, reason);
@@ -675,6 +725,7 @@ public class BluetoothHc05Manager {
     }
 
     public synchronized void close() {
+        // увеличение generation отменяет старые попытки подключения, которые ещё могут работать в фоне
         connectionGeneration++;
         if (connectionThread != null && connectionThread != Thread.currentThread()) {
             connectionThread.interrupt();
@@ -686,6 +737,8 @@ public class BluetoothHc05Manager {
     private synchronized void closeInternal(boolean notifyDisconnected) {
         boolean wasConnected = isConnected();
         ConnectionCallback callback = activeCallback;
+        // при закрытии соединения нужно остановить сканирование, таймауты, потоки и GATT
+        // иначе приложение может держать Bluetooth-ресурсы даже после ухода с экрана
         stopBleScan();
         cancelBleTimeout();
         cancelBleWriteTimeout();
@@ -699,12 +752,15 @@ public class BluetoothHc05Manager {
     }
 
     private BluetoothDevice findPairedDevice(String deviceName) {
+        // paired-устройства читаются из системного BluetoothAdapter
+        // сначала ищем точный MAC, потом запасной вариант по имени HC-05
         try {
             Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
             if (bondedDevices == null) {
                 return null;
             }
             BluetoothDevice nameMatch = null;
+            // перебираем все сопряжённые устройства, чтобы найти нужный модуль
             for (BluetoothDevice device : bondedDevices) {
                 if (TARGET_BLE_ADDRESS.equalsIgnoreCase(getDeviceAddress(device))) {
                     return device;
@@ -767,6 +823,7 @@ public class BluetoothHc05Manager {
     private void closeOutputStream() {
         if (outputStream != null) {
             try {
+                // закрываем поток, через который уходили команды при classic-подключении
                 outputStream.close();
             } catch (IOException ignored) {
             }
@@ -815,11 +872,13 @@ public class BluetoothHc05Manager {
             return;
         }
         try {
+            // disconnect разрывает BLE-соединение, а close ниже освобождает объект GATT
             gatt.disconnect();
         } catch (SecurityException ignored) {
         }
         closeGattQuietly(gatt);
         if (bluetoothGatt == gatt) {
+            // после закрытия GATT очищаем BLE-состояние, чтобы новые команды не ушли в старое соединение
             bluetoothGatt = null;
             writableCharacteristic = null;
             bleConnected = false;
@@ -899,10 +958,6 @@ public class BluetoothHc05Manager {
         return message == null || message.trim().isEmpty()
                 ? exception.getClass().getSimpleName()
                 : message;
-    }
-
-    private boolean equalsIgnoreCase(String first, String second) {
-        return first != null && second != null && first.equalsIgnoreCase(second);
     }
 
     private String firstNonEmpty(String... values) {
